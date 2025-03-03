@@ -1,0 +1,152 @@
+﻿@page "/journal"
+
+<div class="journal-container">
+    <!-- Top Container: Title + Search + Add Button -->
+    <div class="journal-top-container">
+        <h3>Journal Entries</h3>
+        <div class="journal-search-container">
+            <input type="text" placeholder="Search" class="journal-search-box" />
+            <button class="btn btn-primary btn-add-new" @onclick="ShowAddRecordModal">Add New</button>
+        </div>
+    </div>
+
+    <!-- Table Wrapper -->
+    <div class="table-wrapper">
+        <table class="journal-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Journal Code</th>
+                    <th>Description</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var record in PagedJournalRecords)
+                {
+                    <tr>
+                        <td>@record.Date.ToShortDateString()</td>
+                        <td>@record.Code</td>
+                        <td>@record.Description</td>
+                        <td>@(record.Debit > 0 ? $"₱{record.Debit:N2}" : "")</td>
+                        <td>@(record.Credit > 0 ? $"₱{record.Credit:N2}" : "")</td>
+                        <td class="action-cell">
+                            <div class="dropdown">
+                                <button class="dots-btn" @onclick="() => ToggleDropdown(record.Id)">⋮</button>
+                                <div class="dropdown-menu @(activeDropdown == record.Id ? "show" : "")">
+                                    <button @onclick="() => EditRecord(record.Id)">Edit</button>
+                                    <button @onclick="() => DeleteRecord(record.Id)">Delete</button>
+                                    <button @onclick="() => ViewDetails(record.Id)">View</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination Controls -->
+<div class="pagination-controls">
+    <button @onclick="PreviousPage" disabled="@(currentPage == 1)">Previous</button>
+    @for (int pageNum = 1; pageNum <= TotalPages; pageNum++)
+    {
+        int localPage = pageNum;
+        <button class="@(currentPage == localPage ? "active-page" : "")"
+                @onclick="() => GoToPage(localPage)">
+            @localPage
+        </button>
+    }
+    <button @onclick="NextPage" disabled="@(currentPage == TotalPages)">Next</button>
+</div>
+
+@inject IModalService Modal
+
+@code {
+    public class JournalRecord
+    {
+        public int Id { get; set; }
+        public DateTime Date { get; set; }
+        public string Code { get; set; } = "";
+        public string Description { get; set; } = "";
+        public decimal Debit { get; set; }
+        public decimal Credit { get; set; }
+    }
+
+    private int currentPage = 1;
+    private int pageSize = 8;
+    private int? activeDropdown = null;
+    private DateTime selectedDate = DateTime.Now;
+
+    private List<JournalRecord> JournalRecords = new List<JournalRecord>
+    {
+        new JournalRecord { Id = 1, Date = DateTime.Now, Code = "JNL001", Description = "Sample 1", Debit = 1000, Credit = 0 },
+        new JournalRecord { Id = 2, Date = DateTime.Now, Code = "JNL002", Description = "Sample 2", Debit = 0, Credit = 1500 },
+        new JournalRecord { Id = 3, Date = DateTime.Now, Code = "JNL003", Description = "Sample 3", Debit = 200, Credit = 0 },
+        new JournalRecord { Id = 4, Date = DateTime.Now, Code = "JNL004", Description = "Sample 4", Debit = 0, Credit = 200 },
+        new JournalRecord { Id = 5, Date = DateTime.Now, Code = "JNL005", Description = "Sample 5", Debit = 1000, Credit = 0 },
+        new JournalRecord { Id = 6, Date = DateTime.Now, Code = "JNL006", Description = "Sample 6", Debit = 500, Credit = 0 },
+        new JournalRecord { Id = 7, Date = DateTime.Now, Code = "JNL007", Description = "Sample 7", Debit = 0, Credit = 750 },
+        new JournalRecord { Id = 8, Date = DateTime.Now, Code = "JNL008", Description = "Sample 8", Debit = 250, Credit = 0 },
+        new JournalRecord { Id = 9, Date = DateTime.Now, Code = "JNL009", Description = "Sample 9", Debit = 0, Credit = 400 },
+        new JournalRecord { Id = 10, Date = DateTime.Now, Code = "JNL010", Description = "Sample 10", Debit = 300, Credit = 0 }
+    };
+
+    private IEnumerable<JournalRecord> PagedJournalRecords =>
+        JournalRecords.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    private int TotalPages => (int)Math.Ceiling(JournalRecords.Count / (double)pageSize);
+
+    private void GoToPage(int pageNum)
+    {
+        currentPage = pageNum;
+        StateHasChanged();
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            StateHasChanged();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < TotalPages)
+        {
+            currentPage++;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleDropdown(int id)
+    {
+        activeDropdown = activeDropdown == id ? null : id;
+    }
+
+    private void EditRecord(int id)
+    {
+        Console.WriteLine($"Editing Record: {id}");
+    }
+
+    private void DeleteRecord(int id)
+    {
+        Console.WriteLine($"Deleting Record: {id}");
+    }
+
+    private void ViewDetails(int id)
+    {
+        Console.WriteLine($"Viewing Record: {id}");
+    }
+
+    private void ShowAddRecordModal()
+    {
+        var parameters = new ModalParameters();
+        Modal.Show<AddRecord>("Add Record", parameters);
+    }
+}
